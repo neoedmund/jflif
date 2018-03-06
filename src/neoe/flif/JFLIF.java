@@ -6,13 +6,14 @@ import com.sun.jna.Pointer;
 import com.sun.jna.ptr.PointerByReference;
 
 public class JFLIF {
-	public static BufferedImage dec(byte[] buf) {
+	public static BufferedImage decode(byte[] buf) {
 		CFLIF lib = CFLIF.INSTANCE;
 		Pointer decoder = lib.flif_create_decoder();
 		int ret = lib.flif_decoder_decode_memory(decoder, buf, buf.length);
-		System.out.println("decode ret=" + ret);
+		// System.out.println("decode ret=" + ret);
 		int num = lib.flif_decoder_num_images(decoder);
-		System.out.println("decode num=" + num);
+		if (num != 1)
+			System.out.println("decode num=" + num);
 		if (num <= 0)
 			return null;
 		Pointer image = lib.flif_decoder_get_image(decoder, 0);
@@ -54,7 +55,7 @@ public class JFLIF {
 		lib.flif_encoder_encode_memory(encoder, buffer, len);
 		// System.out.println(len[0]);
 		byte[] bs = buffer.getValue().getByteArray(0, len[0]);
-		System.out.println(bs.length);
+		// System.out.println(bs.length);
 		lib.flif_destroy_encoder(encoder);
 		return bs;
 	}
