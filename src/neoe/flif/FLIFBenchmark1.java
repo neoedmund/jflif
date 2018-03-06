@@ -3,6 +3,7 @@ package neoe.flif;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.ExecutorService;
 
 import javax.imageio.ImageIO;
 
@@ -16,15 +17,23 @@ public class FLIFBenchmark1 {
 	private void run(String fn) throws IOException {
 		BufferedImage img = ImageIO.read(new File(fn));
 		long flen = new File(fn).length();
-		for (int loss = 0; loss <= 100; loss += 10) {
-			byte[] bs = JFLIF.encode(img, loss);
-			BufferedImage img2 = JFLIF.decode(bs);
-			float loss1 = getLoss1(img, img2);
-			System.out.printf("loss:%d\tsize:%,d\tsize ratio:%.1f%%\tLOSS1*:%f\n", loss, bs.length,
-					ratio(bs.length, flen), loss1);
-			FileUtil.save(bs, fn + "." + loss  +".flif");
+		ExecutorService tp = java.util.concurrent.Executors.newFixedThreadPool(4);
+		for (int loss0 = 0; loss0 <= 100; loss0 += 10) {
+			final int loss = loss0;
+			tp.submit(() -> {
+				byte[] bs = JFLIF.encode(img, loss);
+				BufferedImage img2 = JFLIF.decode(bs);
+				float loss1 = getLoss1(img, img2);
+				System.out.printf("loss:%d\tsize:%,d\tsize ratio:%.1f%%\tLOSS1*:%f\n", loss, bs.length,
+						ratio(bs.length, flen), loss1);
+				try {
+					FileUtil.save(bs, fn + "." + loss + ".flif");
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});
 		}
-
+		tp.shutdown();
 	}
 
 	private static float ratio(int length, long flen) {
